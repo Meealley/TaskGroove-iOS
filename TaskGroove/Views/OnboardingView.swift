@@ -56,6 +56,7 @@ struct OnboardingView: View {
                     if currentPage == pages.count - 1 {
                         Button {
                             print("Get Started")
+                            completeOnboarding()
                         } label : {
                             Text("Get Started")
                                 .font(.dmsans(size: 16))
