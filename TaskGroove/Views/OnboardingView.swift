@@ -8,24 +8,11 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @StateObject private var viewModel = OnboardingViewModel()
     @Binding var showOnboarding: Bool
-    @State private var currentPage: Int = 0
-    
-    private let pages = OnboardingPage.pages
     
     var body: some View {
         ZStack {
-//            LinearGradient(
-//                colors: [
-//                    pages[currentPage].color.opacity(0.3),
-//                    pages[currentPage].color.opacity(0.1)
-//                    
-//                ],
-//                startPoint: .topLeading,
-//                endPoint: .bottomTrailing
-//            )
-//            .ignoresSafeArea()
-//            .animation(.easeInOut(duration: 0.5), value: currentPage)
             
             VStack {
                 // Skip button
@@ -33,7 +20,8 @@ struct OnboardingView: View {
                     Spacer()
                     Button {
                         print("Skip")
-                        completeOnboarding()
+                        viewModel.skipOnboarding()
+                        showOnboarding = true
                     } label: {
                         Text("Skip")
                             .font(.dmsans(size: 14))
@@ -42,66 +30,44 @@ struct OnboardingView: View {
                     }
                 }
                 // Page Content
-                TabView(selection: $currentPage){
-                    ForEach(0..<pages.count, id: \.self){
+                TabView(selection: $viewModel.currentPage){
+                    ForEach(0..<viewModel.pages.count, id: \.self){
                         index in
-                        OnboardingPageView(page: pages[index])
+                        OnboardingPageView(page: viewModel.pages[index])
                             .tag(index)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .always))
                 .indexViewStyle(.page(backgroundDisplayMode: .always))
+
                 
-                VStack(spacing: 20) {
-                    if currentPage == pages.count - 1 {
-                        Button {
-                            print("Get Started")
-                            completeOnboarding()
-                        } label : {
-                            Text("Get Started")
-                                .font(.dmsans(size: 16))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 14)
-                                .padding()
-                                .background(pages[currentPage].color)
-                                .cornerRadius(12)
-                                .shadow(radius: 5)
+                Button(action: {
+                    if viewModel.currentPage == viewModel.pages.count - 1 {
+                        showOnboarding = true   // ✅ mark as completed
+                        } else {
+                            viewModel.nextPage()
                         }
+                }){
+                    Text(viewModel.currentPage == viewModel.pages.count - 1 ? "Get Started" : "Continue")
+                        .font(.dmsans(size: 16))
+                        .foregroundStyle(.white)
+                        
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(viewModel.pages[viewModel.currentPage].color)
+                        .cornerRadius(12)
+                        .shadow(radius: 5)
                         .padding(.horizontal, 15)
                         
-                    } else {
-                        Button {
-                            withAnimation {
-                                currentPage += 1
-                            }
-                        } label : {
-                            Text("Continue")
-                                .font(.dmsans(size: 16))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(pages[currentPage].color)
-                                .cornerRadius(12)
-                                .shadow(radius: 5)
-                        }
-                        .padding(.horizontal, 15)
-                    }
                 }
                 .padding(.bottom, 30)
             }
         }
         
     }
-    
-    private func completeOnboarding() {
-        withAnimation {
-            showOnboarding = false
-        }
-        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-    }
+
 }
 
 #Preview {
-    OnboardingView(showOnboarding: .constant(true))
+    OnboardingView(showOnboarding: .constant(false))
 }

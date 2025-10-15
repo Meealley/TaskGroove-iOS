@@ -6,13 +6,17 @@
 //
 
 import SwiftUI
+import FirebaseCore
+import FirebaseAuth
 
 @main
 struct TaskGrooveApp: App {
     
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
+    @State private var isLoggedIn = false
     
     init() {
+        FirebaseApp.configure()
         setupNavigationBarAppearance()
         setupToolbarAppearance()
     }
@@ -22,11 +26,42 @@ struct TaskGrooveApp: App {
             Group {
                 if !hasCompletedOnboarding {
                     OnboardingView(showOnboarding: $hasCompletedOnboarding)
+                } else if !isLoggedIn{
+                    NavigationStack {
+                        LoginView(isLoggedIn: $isLoggedIn)
+                    }
+                    
                 } else {
                     MainView()
                 }
             }
+            .onAppear {
+                checkAuthState()
+            }
+            .onChange(of: isLoggedIn) { _, newValue in
+                UserDefaults.standard.set(newValue, forKey: "isLoggedIn")
+            }
         }
+    }
+    
+    
+    private func checkAuthState() {
+        // Check the current auth state
+        if Auth.auth().currentUser != nil {
+            isLoggedIn = true
+        } else {
+            isLoggedIn = false
+        }
+        
+        // Listen for auth state changes (incl. logout)
+        Auth.auth().addStateDidChangeListener { _, user in
+            DispatchQueue.main.async {
+                withAnimation {
+                    isLoggedIn = user != nil
+                }
+            }
+        }
+        
     }
     
     
