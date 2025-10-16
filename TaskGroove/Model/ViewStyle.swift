@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+
+enum ViewStyle {
+    case list, board, calendar
+}

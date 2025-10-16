@@ -1,6 +1,8 @@
 //
 //  InboxView.swift
-//  GreetingsApp
+//  TaskGroove
+//
+//  Created by Oyewale Favour on 16/10/2025.
 //
 
 import SwiftUI
@@ -8,7 +10,6 @@ import SwiftUI
 struct InboxView: View {
     @StateObject private var viewModel = InboxViewModel()
     @StateObject private var authManager = AuthenticationManager()
-    @State private var searchText = ""
     @State private var navigationPath = NavigationPath()
     
     private var userName: String {
@@ -23,54 +24,99 @@ struct InboxView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                backgroundView
+                // Background
+//                LinearGradient(
+//                    colors: [.blue.opacity(0.05), .purple.opacity(0.05)],
+//                    startPoint: .topLeading,
+//                    endPoint: .bottomTrailing
+//                )
+//                .ignoresSafeArea()
                 
+                // Content
                 ScrollView {
                     VStack(spacing: 20) {
-                        Group {
-                            switch viewModel.selectedViewStyle {
-                            case .list: listView
-                            case .board: boardView
-                            case .calendar: calendarView
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 80)
+                        tasksContent
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 80)
                     }
+                    .padding(.bottom, 30)
                 }
                 
-                floatingButton
+                // Floating Action Button
+                floatingActionButton
             }
             .navigationTitle("Inbox")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar { toolbarItems }
+            .toolbar {
+                toolbarContent
+            }
             .sheet(isPresented: $viewModel.showViewSheet) {
-                ViewFilterSheet(
-                    selectedViewStyle: $viewModel.selectedViewStyle,
-                    selectedFilter: $viewModel.selectedFilter,
-                    isPresented: $viewModel.showViewSheet
-                )
-                .presentationDetents([.medium])
+                ViewFilterSheet(viewModel: viewModel)
+//                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $viewModel.showTaskSheet) {
-                CreateTaskSheet(isPresented: $viewModel.showTaskSheet) { newTask in
-                    viewModel.addTask(newTask)
-                }
+                CreateTaskSheet(viewModel: viewModel)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
             }
         }
     }
-}
-
-// MARK: - Subviews
-extension InboxView {
-    private var backgroundView: some View {
-        LinearGradient(colors: [.blue.opacity(0.05), .purple.opacity(0.05)],
-                       startPoint: .topLeading,
-                       endPoint: .bottomTrailing)
-            .ignoresSafeArea()
+    
+    // MARK: - Tasks Content
+    @ViewBuilder
+    private var tasksContent: some View {
+        switch viewModel.selectedViewStyle {
+        case .list:
+            listView
+        case .board:
+            boardView
+        case .calendar:
+            calendarView
+        }
     }
     
-    private var floatingButton: some View {
+    // MARK: - List View
+    private var listView: some View {
+        VStack(spacing: 12) {
+            ForEach(viewModel.filteredTasks) { task in
+                TaskListCard(
+                    task: task,
+                    onToggle: { viewModel.toggleCompletion(for: task) }
+                )
+            }
+        }
+    }
+    
+    // MARK: - Board View
+    private var boardView: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible(), spacing: 15),
+            GridItem(.flexible(), spacing: 15)
+        ], spacing: 15) {
+            ForEach(viewModel.filteredTasks) { task in
+                TaskBoardCard(
+                    task: task,
+                    onToggle: { viewModel.toggleCompletion(for: task) }
+                )
+            }
+        }
+    }
+    
+    // MARK: - Calendar View
+    private var calendarView: some View {
+        VStack(spacing: 15) {
+            ForEach(viewModel.filteredTasks) { task in
+                TaskCalendarCard(
+                    task: task,
+                    onToggle: { viewModel.toggleCompletion(for: task) }
+                )
+            }
+        }
+    }
+    
+    // MARK: - Floating Action Button
+    private var floatingActionButton: some View {
         VStack {
             Spacer()
             HStack {
@@ -83,9 +129,11 @@ extension InboxView {
                         .foregroundColor(.white)
                         .frame(width: 60, height: 60)
                         .background(
-                            LinearGradient(colors: [.blue, .purple],
-                                           startPoint: .topLeading,
-                                           endPoint: .bottomTrailing)
+                            LinearGradient(
+                                colors: [.blue, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
                         .clipShape(Circle())
                         .shadow(color: .blue.opacity(0.4), radius: 10, x: 0, y: 5)
@@ -96,41 +144,29 @@ extension InboxView {
         }
     }
     
-    private var toolbarItems: some ToolbarContent {
-        Group {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    viewModel.showViewSheet = true
-                } label: {
-                    Image(systemName: "rectangle.stack.fill")
-                }
+    // MARK: - Toolbar Content
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button {
+                viewModel.showViewSheet = true
+            } label: {
+                Image(systemName: "rectangle.stack.fill")
             }
         }
-    }
-    
-    private var listView: some View {
-        VStack(spacing: 12) {
-            ForEach($viewModel.tasks) { $task in
-                TaskListCard(task: $task)
-            }
-        }
-    }
-    
-    private var boardView: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 15),
-                            GridItem(.flexible(), spacing: 15)],
-                  spacing: 15) {
-            ForEach($viewModel.tasks) { $task in
-                TaskBoardCard(task: $task)
-            }
-        }
-    }
-    
-    private var calendarView: some View {
-        VStack(spacing: 15) {
-            ForEach($viewModel.tasks) { $task in
-                TaskCalendarCard(task: $task)
-            }
+        
+        ToolbarItem(placement: .navigationBarTrailing) {
+            DMSansMenuButton(icon: "ellipsis.circle", items: [
+                (title: "Activity", icon: "chart.bar.fill", isDestructive: false, action: {
+                    navigationPath.append("Activity")
+                }),
+                (title: "Add Section", icon: "square.on.square.squareshape.controlhandles", isDestructive: false, action: {
+                    navigationPath.append("AddSection")
+                }),
+                (title: "Comments", icon: "message", isDestructive: false, action: {
+                    navigationPath.append("Comments")
+                })
+            ])
         }
     }
 }

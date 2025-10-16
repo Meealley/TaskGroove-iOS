@@ -139,6 +139,9 @@ struct LoginView: View {
                     }
                     .padding(.horizontal, 12)
                     
+                    // MARK: - Social Sign Up (Google & Apple)
+                    SocialSignInButtons(authManager: authManager, showError: $showError)
+                    
                     
                      // MARK: - Sign Up Navigation Link
                     HStack {

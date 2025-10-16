@@ -200,8 +200,10 @@ struct SignUpView: View {
                     .padding(.horizontal, 10)
                     
                     
-                    // Login Link
+                    // MARK: - Social Sign Up Button
+                    SocialSignInButtons(authManager: authManager, showError: $showError)
                     
+                    // MARK: -  Login Link
                     HStack {
                         Text("Already have an account?")
                             .font(.dmsans(size:13))

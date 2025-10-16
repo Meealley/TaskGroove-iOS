@@ -67,7 +67,9 @@ struct TaskGrooveApp: App {
     
     private func setupNavigationBarAppearance() {
         let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
+//        appearance.configureWithTransparentBackground()
+        appearance.configureWithDefaultBackground()
+
         
         if let customFont = UIFont(name: "DMSans-Regular", size: 17) {
             appearance.titleTextAttributes = [
