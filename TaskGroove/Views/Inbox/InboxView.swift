@@ -24,13 +24,7 @@ struct InboxView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background
-//                LinearGradient(
-//                    colors: [.blue.opacity(0.05), .purple.opacity(0.05)],
-//                    startPoint: .topLeading,
-//                    endPoint: .bottomTrailing
-//                )
-//                .ignoresSafeArea()
+
                 
                 // Content
                 ScrollView {
@@ -81,8 +75,10 @@ struct InboxView: View {
         VStack(spacing: 12) {
             ForEach(viewModel.filteredTasks) { task in
                 TaskListCard(
+                  
                     task: task,
-                    onToggle: { viewModel.toggleCompletion(for: task) }
+                    onToggle: { viewModel.toggleCompletion(for: task) },
+                    
                 )
             }
         }
