@@ -51,8 +51,11 @@ struct InboxView: View {
             }
             .sheet(isPresented: $viewModel.showTaskSheet) {
                 CreateTaskSheet(viewModel: viewModel)
-                    .presentationDetents([.large])
+//                    .presentationDetents([.large])
+                    .presentationDetents([.height(UIScreen.main.bounds.height * 0.5)])
                     .presentationDragIndicator(.visible)
+                    .presentationBackgroundInteraction(.disabled)
+                    .interactiveDismissDisabled(false)
             }
         }
     }
@@ -152,18 +155,42 @@ struct InboxView: View {
         }
         
         ToolbarItem(placement: .navigationBarTrailing) {
-            DMSansMenuButton(icon: "ellipsis.circle", items: [
-                (title: "Activity", icon: "chart.bar.fill", isDestructive: false, action: {
-                    navigationPath.append("Activity")
-                }),
-                (title: "Add Section", icon: "square.on.square.squareshape.controlhandles", isDestructive: false, action: {
-                    navigationPath.append("AddSection")
-                }),
-                (title: "Comments", icon: "message", isDestructive: false, action: {
-                    navigationPath.append("Comments")
-                })
-            ])
+            DMSansMenuButton(
+                icon: "ellipsis.circle",
+                title: nil, // or "More" if you want text
+                items: [
+                    DMSansMenuButton.MenuItem(
+                        title: "Activity",
+                        icon: "chart.bar.fill",
+                        color: .label, // 👈 add a color (e.g., .systemBlue)
+                        isDestructive: false,
+                        action: {
+                            navigationPath.append("Activity")
+                        }
+                    ),
+                    DMSansMenuButton.MenuItem(
+                        title: "Add Section",
+                        icon: "square.on.square.squareshape.controlhandles",
+                        color: .label,
+                        isDestructive: false,
+                        action: {
+                            navigationPath.append("AddSection")
+                        }
+                    ),
+                    DMSansMenuButton.MenuItem(
+                        title: "Comments",
+                        icon: "message",
+                        color: .label,
+                        isDestructive: false,
+                        action: {
+                            navigationPath.append("Comments")
+                        }
+                    )
+                ],
+                tintColor: .label // optional, default is .label
+            )
         }
+
     }
 }
 

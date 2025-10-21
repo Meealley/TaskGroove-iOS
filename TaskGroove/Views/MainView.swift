@@ -14,11 +14,19 @@ struct MainView: View {
     var body: some View {
             TabView(selection: $selectedTab) {
                 // Inbox Tab
-                InboxView()
-                    .tabItem {
-                        Label("Inbox", systemImage: selectedTab == 0 ? "tray.fill" : "tray")
-                    }
-                    .tag(0)
+//                InboxView()
+//                    .tabItem {
+//                        Label("Inbox", systemImage: selectedTab == 0 ? "tray.fill" : "tray")
+//                    }
+//                    .tag(0)
+                
+                // Home Tab (New)
+                    HomeView()
+                        .tabItem {
+                            Label("Home", systemImage: selectedTab == 0 ? "house.fill" : "house")
+                        }
+                        .tag(0)
+
                 
                 // Today Tab
                 TodayView()
