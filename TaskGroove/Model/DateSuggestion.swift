@@ -6,3 +6,11 @@
 //
 
 import Foundation
+
+
+// MARK: - Date Suggestion Model
+struct DateSuggestion: Identifiable {
+    let id = UUID()
+    let text: String
+    let date: Date
+}

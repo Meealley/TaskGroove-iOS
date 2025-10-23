@@ -12,9 +12,9 @@ final class CreateTaskViewModel: ObservableObject {
     @Published var taskName = ""
     @Published var taskDescription = ""
     @Published var selectedPriority: TaskItem.Priority = .none
-    @Published var dueDate = Date()
+    @Published var dueDate: Date? = nil
     @Published var showDatePicker = false
-    @Published var reminder = Date()
+    @Published var reminder: Date? = nil
     @Published var showReminderPicker = false
     @Published var showMoreOptions = false
     @Published var selectedLabels: Set<String> = []
@@ -27,14 +27,19 @@ final class CreateTaskViewModel: ObservableObject {
         !taskName.trimmingCharacters(in: .whitespaces).isEmpty
     }
     
+    // Check if date was actually set
+    var hasDateSet: Bool {
+        dueDate != nil
+    }
+    
     func createTask() -> TaskItem {
         TaskItem(
             name: taskName,
             description: taskDescription,
             priority: selectedPriority,
             isCompleted: false,
-            dueDate: showDatePicker ? dueDate : nil,
-            reminder: showReminderPicker ? reminder : nil,
+            dueDate: dueDate,
+            reminder: reminder,
             labels: Array(selectedLabels),
             location: location.isEmpty ? nil : location
         )
@@ -44,9 +49,9 @@ final class CreateTaskViewModel: ObservableObject {
         taskName = ""
         taskDescription = ""
         selectedPriority = .none
-        dueDate = Date()
+        dueDate = nil
         showDatePicker = false
-        reminder = Date()
+        reminder = nil
         showReminderPicker = false
         showMoreOptions = false
         selectedLabels = []

@@ -44,10 +44,13 @@ struct CreateTaskSheet: View {
             .navigationBarHidden(true)
             .sheet(isPresented: $showDatePicker) {
                 DatePickerSheet(
-                    selectedDate: $createViewModel.dueDate,
+                    selectedDate: Binding(
+                        get: { createViewModel.dueDate ?? Date() },
+                        set: { createViewModel.dueDate = $0 }
+                    ),
                     onDismiss: { showDatePicker = false }
                 )
-                .presentationDetents([.height(800)])
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showPriorityPicker) {
@@ -55,15 +58,18 @@ struct CreateTaskSheet: View {
                     selectedPriority: $createViewModel.selectedPriority,
                     onDismiss: { showPriorityPicker = false }
                 )
-                .presentationDetents([.height(300)])
+                .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showReminderPicker) {
                 ReminderPickerSheet(
-                    reminderTime: $createViewModel.reminder,
+                    reminderTime: Binding(
+                        get: { createViewModel.reminder ?? Date() },
+                        set: { createViewModel.reminder = $0 }
+                    ),
                     onDismiss: { showReminderPicker = false }
                 )
-                .presentationDetents([.height(400)])
+                .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
             }
             .onAppear {
@@ -121,13 +127,13 @@ struct CreateTaskSheet: View {
                 }
                 .padding(.horizontal, 20)
                 
-                // Date Label (if selected)
-                if createViewModel.dueDate != Date() {
+                // Date Label (if selected) - UPDATED
+                if let dueDate = createViewModel.dueDate {
                     HStack {
                         Spacer()
                             .frame(width: 36) // Align with text
                         
-                        DateChip(date: createViewModel.dueDate)
+                        DateChip(date: dueDate)
                         
                         Spacer()
                     }
@@ -143,18 +149,6 @@ struct CreateTaskSheet: View {
         .padding(.vertical, 16)
     }
     
-    // MARK: - Project Section
-    private var projectSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Books") // Or dynamic project name
-                .font(.dmsansBold(size: 18))
-                .foregroundColor(.primary)
-                .padding(.horizontal, 20)
-            
-            // Could add a horizontal scroll of projects here
-        }
-    }
-    
     // MARK: - Quick Action Pills
     private var quickActionPills: some View {
         HStack(spacing: 10) {
@@ -162,7 +156,7 @@ struct CreateTaskSheet: View {
                 icon: "calendar",
                 title: "Date",
                 color: .blue,
-                isActive: createViewModel.dueDate != Date()
+                isActive: createViewModel.hasDateSet  // UPDATED
             ) {
                 showDatePicker = true
             }
@@ -194,20 +188,11 @@ struct CreateTaskSheet: View {
             .frame(width: 90, height: 36)
             
             
-//            ActionPill(
-//                icon: "flag",
-//                title: "Priority",
-//                color: .orange,
-//                isActive: createViewModel.selectedPriority != .low
-//            ) {
-//                showPriorityPicker = true
-//            }
-            
             ActionPill(
                 icon: "bell",
                 title: "Reminders",
                 color: .purple,
-                isActive: false
+                isActive: createViewModel.reminder != nil  // UPDATED
             ) {
                 showReminderPicker = true
             }
@@ -333,14 +318,64 @@ struct DateChip: View {
     }
 }
 
+// MARK: - Date Suggestion Model
+//struct DateSuggestion: Identifiable {
+//    let id = UUID()
+//    let text: String
+//    let date: Date
+//}
 
-//  Enhanced Date Picker with functional search
+// MARK: - Quick Date Option
+//enum QuickDateOption: CaseIterable {
+//    case today, tomorrow, thisWeekend, nextWeek
+//    
+//    var title: String {
+//        switch self {
+//        case .today: return "Today"
+//        case .tomorrow: return "Tomorrow"
+//        case .thisWeekend: return "This Weekend"
+//        case .nextWeek: return "Next Week"
+//        }
+//    }
+//    
+//    var icon: String {
+//        switch self {
+//        case .today: return "calendar"
+//        case .tomorrow: return "sun.max"
+//        case .thisWeekend: return "sofa"
+//        case .nextWeek: return "calendar.badge.plus"
+//        }
+//    }
+//    
+//    var date: Date {
+//        let calendar = Calendar.current
+//        switch self {
+//        case .today:
+//            return Date()
+//        case .tomorrow:
+//            return calendar.date(byAdding: .day, value: 1, to: Date())!
+//        case .thisWeekend:
+//            let weekday = calendar.component(.weekday, from: Date())
+//            let daysUntilSaturday = (7 - weekday + 7) % 7
+//            return calendar.date(byAdding: .day, value: daysUntilSaturday == 0 ? 7 : daysUntilSaturday, to: Date())!
+//        case .nextWeek:
+//            return calendar.date(byAdding: .weekOfYear, value: 1, to: Date())!
+//        }
+//    }
+//    
+//    var dayText: String {
+//        let formatter = DateFormatter()
+//        formatter.dateFormat = "EEE"
+//        return formatter.string(from: date)
+//    }
+//}
 
+// MARK: - Enhanced Date Picker with functional search
 struct DatePickerSheet: View {
     @Binding var selectedDate: Date
     let onDismiss: () -> Void
     
-    @State private var tempDate = Date()
+    @State private var tempDate: Date
     @State private var selectedQuickOption: QuickDateOption?
     @State private var searchText = ""
     @State private var isSearching = false
@@ -348,8 +383,14 @@ struct DatePickerSheet: View {
     @State private var showTimePicker = false
     @State private var selectedTime: Date = Date()
     
+    init(selectedDate: Binding<Date>, onDismiss: @escaping () -> Void) {
+        self._selectedDate = selectedDate
+        self.onDismiss = onDismiss
+        // Initialize tempDate with the current selected date
+        _tempDate = State(initialValue: selectedDate.wrappedValue)
+    }
+    
     // Search suggestions based on input
-    // Updated
     private var searchSuggestions: [DateSuggestion] {
         if searchText.isEmpty { return [] }
 
@@ -416,51 +457,6 @@ struct DatePickerSheet: View {
         return suggestions
     }
 
-    
-    enum QuickDateOption: CaseIterable {
-        case today, tomorrow, thisWeekend, nextWeek
-        
-        var title: String {
-            switch self {
-            case .today: return "Today"
-            case .tomorrow: return "Tomorrow"
-            case .thisWeekend: return "This Weekend"
-            case .nextWeek: return "Next Week"
-            }
-        }
-        
-        var icon: String {
-            switch self {
-            case .today: return "calendar"
-            case .tomorrow: return "sun.max"
-            case .thisWeekend: return "sofa"
-            case .nextWeek: return "calendar.badge.plus"
-            }
-        }
-        
-        var date: Date {
-            let calendar = Calendar.current
-            switch self {
-            case .today:
-                return Date()
-            case .tomorrow:
-                return calendar.date(byAdding: .day, value: 1, to: Date())!
-            case .thisWeekend:
-                let weekday = calendar.component(.weekday, from: Date())
-                let daysUntilSaturday = (7 - weekday + 7) % 7
-                return calendar.date(byAdding: .day, value: daysUntilSaturday == 0 ? 7 : daysUntilSaturday, to: Date())!
-            case .nextWeek:
-                return calendar.date(byAdding: .weekOfYear, value: 1, to: Date())!
-            }
-        }
-        
-        var dayText: String {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "EEE"
-            return formatter.string(from: date)
-        }
-    }
-    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -515,6 +511,9 @@ struct DatePickerSheet: View {
             }
             .onChange(of: searchText) { newValue in
                 isSearching = !newValue.isEmpty
+            }
+            .onAppear {
+                tempDate = selectedDate
             }
         }
     }
@@ -718,22 +717,6 @@ struct DatePickerSheet: View {
     }
 }
 
-// MARK: - Date Suggestion Model
-struct DateSuggestion: Identifiable {
-    let id = UUID()
-    let text: String
-    let date: Date
-}
-
-#Preview {
-    DatePickerSheet(
-        selectedDate: .constant(Date()),
-        onDismiss: {}
-    )
-}
-
-
-
 // MARK: - Priority Picker Sheet
 struct PriorityPickerSheet: View {
     @Binding var selectedPriority: TaskItem.Priority
@@ -826,3 +809,7 @@ struct ReminderPickerSheet: View {
 #Preview {
     CreateTaskSheet(viewModel: InboxViewModel())
 }
+
+
+
+

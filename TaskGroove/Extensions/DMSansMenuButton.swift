@@ -66,7 +66,7 @@ struct DMSansMenuButton: UIViewRepresentable {
             
             // Apply DMSans font styling
             if let title = item.title,
-               let customFont = UIFont(name: "DMSans-Regular", size: 16) {
+               let customFont = UIFont(name: "DMSans-Regular", size: 14) {
                 action.setValue(
                     NSAttributedString(
                         string: title,

@@ -110,6 +110,14 @@ final class InboxViewModel: ObservableObject {
         }
     }
     
+    func rescheduleTask(_ task: TaskItem, to newDate: Date?) {
+        if let index = tasks.firstIndex(where: { $0.id == task.id}) {
+            var updatedTask = tasks[index]
+            updatedTask.dueDate = newDate
+            tasks[index] = updatedTask
+        }
+    }
+    
     func deleteTask(_ task: TaskItem) {
         tasks.removeAll { $0.id == task.id }
     }
