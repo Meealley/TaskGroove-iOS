@@ -8,11 +8,19 @@
 import SwiftUI
 
 struct FloatingAddButton: View {
+    var action: () -> Void
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        Button(action: action) {
+            Image(systemName: "plus")
+                .font(.system(size: 24, weight: .medium))
+                .foregroundColor(.white)
+                .frame(width: 56, height: 56)
+                .background(
+                    Circle()
+                        .fill(Color.blue)
+                        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+                )
+        }
     }
-}
-
-#Preview {
-    FloatingAddButton()
 }

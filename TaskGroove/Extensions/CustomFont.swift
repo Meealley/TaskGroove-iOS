@@ -10,6 +10,11 @@ extension Font {
         Font.custom("DMSans-Bold", size: size)
     }
     
+    static func dmsansSemiBold(weight: Font.Weight = .semibold,  size: CGFloat = 17) -> Font {
+        Font.custom("DMSans-SemiBold", size: size)
+    }
+    
+    
     static func dmsansThin(weight: Font.Weight = .thin, size: CGFloat = 17) -> Font {
         Font.custom("DMSans-Thin", size: size)
     }
