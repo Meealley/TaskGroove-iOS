@@ -14,41 +14,162 @@ final class InboxViewModel: ObservableObject {
     @Published var selectedFilter: FilterOptions = .all
     @Published var showViewSheet = false
     @Published var showTaskSheet = false
+    @Published var isLoading = false
     
     init() {
-        loadSampleData()
+        loadTasks()
     }
     
-    private func loadSampleData() {
-        // Sample Tasks
-        tasks = [
+    // MARK: - Load Tasks
+    /// Simulates loading tasks from a data source
+    /// In production, this would fetch from Firebase/API
+    func loadTasks() {
+        isLoading = true
+        
+        // Simulate network delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.tasks = self?.generateSampleTasks() ?? []
+            self?.isLoading = false
+        }
+    }
+    
+    // MARK: - Generate Sample Data
+    private func generateSampleTasks() -> [TaskItem] {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        return [
+            // Today's tasks
             TaskItem(
                 name: "Review meetings",
                 description: "Check in with Oluwasegun",
                 priority: .high,
                 isCompleted: false,
-                dueDate: Date()
-            ),
-            TaskItem(
-                name: "Lunch",
-                description: "Get food from Chowdeck",
-                priority: .medium,
-                isCompleted: false,
-                dueDate: Calendar.current.date(byAdding: .day, value: 1, to: Date())
+                dueDate: today
             ),
             TaskItem(
                 name: "Code review",
                 description: "Review authentication module",
                 priority: .high,
                 isCompleted: false,
-                dueDate: Date()
+                dueDate: today
             ),
             TaskItem(
                 name: "Team standup",
                 description: "Daily sync at 10 AM",
                 priority: .medium,
                 isCompleted: true,
-                dueDate: Date()
+                dueDate: today
+            ),
+            TaskItem(
+                name: "Update documentation",
+                description: "Add API endpoints docs",
+                priority: .low,
+                isCompleted: false,
+                dueDate: today
+            ),
+            
+            // Tomorrow's tasks
+            TaskItem(
+                name: "Lunch",
+                description: "Get food from Chowdeck",
+                priority: .medium,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: 1, to: today)
+            ),
+            TaskItem(
+                name: "Client presentation",
+                description: "Present Q4 roadmap",
+                priority: .high,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: 1, to: today)
+            ),
+            
+            // This week
+            TaskItem(
+                name: "Design sprint review",
+                description: "Review new app designs",
+                priority: .medium,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: 3, to: today)
+            ),
+            TaskItem(
+                name: "Deploy to staging",
+                description: "Test new features",
+                priority: .high,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: 4, to: today)
+            ),
+            TaskItem(
+                name: "Team building event",
+                description: "Friday social at 5 PM",
+                priority: .low,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: 5, to: today)
+            ),
+            
+            // Next week
+            TaskItem(
+                name: "Sprint planning",
+                description: "Plan next 2-week sprint",
+                priority: .high,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: 7, to: today)
+            ),
+            TaskItem(
+                name: "Performance reviews",
+                description: "Submit team evaluations",
+                priority: .medium,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: 10, to: today)
+            ),
+            
+            // Further out
+            TaskItem(
+                name: "Annual company retreat",
+                description: "Book travel and accommodation",
+                priority: .medium,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: 30, to: today)
+            ),
+            TaskItem(
+                name: "Q1 Budget planning",
+                description: "Prepare department budget",
+                priority: .high,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: 45, to: today)
+            ),
+            
+            // Overdue tasks
+            TaskItem(
+                name: "File expense reports",
+                description: "Submit September expenses",
+                priority: .high,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: -2, to: today)
+            ),
+            TaskItem(
+                name: "Complete training module",
+                description: "Security awareness training",
+                priority: .medium,
+                isCompleted: false,
+                dueDate: calendar.date(byAdding: .day, value: -5, to: today)
+            ),
+            
+            // No due date
+            TaskItem(
+                name: "Research new frameworks",
+                description: "Evaluate SwiftUI alternatives",
+                priority: .low,
+                isCompleted: false,
+                dueDate: nil
+            ),
+            TaskItem(
+                name: "Organize bookmarks",
+                description: "Clean up saved articles",
+                priority: .low,
+                isCompleted: false,
+                dueDate: nil
             )
         ]
     }
@@ -120,5 +241,17 @@ final class InboxViewModel: ObservableObject {
     
     func deleteTask(_ task: TaskItem) {
         tasks.removeAll { $0.id == task.id }
+    }
+    
+    // MARK: - Refresh
+    /// Call this from pull-to-refresh
+    func refreshTasks() async {
+        isLoading = true
+        
+        // Simulate network delay
+        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        
+        // Reload tasks
+        loadTasks()
     }
 }

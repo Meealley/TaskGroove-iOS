@@ -36,7 +36,13 @@ struct MainView: View {
                     .tag(1)
                 
                 // Upcoming Tab
-                UpcomingView()
+//                UpcomingView()
+//                    .tabItem {
+//                        Label("Upcoming", systemImage: selectedTab == 2 ? "clock.fill" : "clock")
+//                    }
+//                    .tag(2)
+                
+                UpcomingContainerView()
                     .tabItem {
                         Label("Upcoming", systemImage: selectedTab == 2 ? "clock.fill" : "clock")
                     }
