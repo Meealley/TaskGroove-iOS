@@ -16,21 +16,65 @@ final class InboxViewModel: ObservableObject {
     @Published var showTaskSheet = false
     @Published var isLoading = false
     
+    private let tasksKey = "SavedTasks"
+    
     init() {
         loadTasks()
     }
     
     // MARK: - Load Tasks
-    /// Simulates loading tasks from a data source
-    /// In production, this would fetch from Firebase/API
+    /// Loads tasks from UserDefaults or generates sample data if none exist
     func loadTasks() {
         isLoading = true
         
-        // Simulate network delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.tasks = self?.generateSampleTasks() ?? []
-            self?.isLoading = false
+        // Try to load from UserDefaults first
+        if let savedTasks = loadTasksFromStorage() {
+            self.tasks = savedTasks
+            self.isLoading = false
+        } else {
+            // If no saved tasks, generate sample data
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.tasks = self?.generateSampleTasks() ?? []
+                self?.saveTasks() // Save the sample data
+                self?.isLoading = false
+            }
         }
+    }
+    
+    // MARK: - Persistence
+    /// Save tasks to UserDefaults
+    private func saveTasks() {
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(tasks)
+            UserDefaults.standard.set(data, forKey: tasksKey)
+        } catch {
+            print("Error saving tasks: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Load tasks from UserDefaults
+    private func loadTasksFromStorage() -> [TaskItem]? {
+        guard let data = UserDefaults.standard.data(forKey: tasksKey) else {
+            return nil
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let tasks = try decoder.decode([TaskItem].self, from: data)
+            return tasks
+        } catch {
+            print("Error loading tasks: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    /// Clear all saved tasks (useful for testing)
+    func clearAllTasks() {
+        tasks = []
+        UserDefaults.standard.removeObject(forKey: tasksKey)
     }
     
     // MARK: - Generate Sample Data
@@ -223,24 +267,35 @@ final class InboxViewModel: ObservableObject {
     // MARK: - Task Operations
     func addTask(_ task: TaskItem) {
         tasks.insert(task, at: 0)
+        saveTasks()
     }
     
     func toggleCompletion(for task: TaskItem) {
         if let index = tasks.firstIndex(where: { $0.id == task.id }) {
             tasks[index].isCompleted.toggle()
+            saveTasks()
         }
     }
     
     func rescheduleTask(_ task: TaskItem, to newDate: Date?) {
-        if let index = tasks.firstIndex(where: { $0.id == task.id}) {
+        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
             var updatedTask = tasks[index]
             updatedTask.dueDate = newDate
             tasks[index] = updatedTask
+            saveTasks()
         }
     }
     
     func deleteTask(_ task: TaskItem) {
         tasks.removeAll { $0.id == task.id }
+        saveTasks()
+    }
+    
+    func updateTask(_ task: TaskItem) {
+        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+            tasks[index] = task
+            saveTasks()
+        }
     }
     
     // MARK: - Refresh
@@ -251,7 +306,9 @@ final class InboxViewModel: ObservableObject {
         // Simulate network delay
         try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         
-        // Reload tasks
-        loadTasks()
+        // Reload tasks (in production, this would fetch from server)
+        tasks = loadTasksFromStorage() ?? []
+        
+        isLoading = false
     }
 }

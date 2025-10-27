@@ -8,8 +8,8 @@
 import Foundation
 import SwiftUI
 
-struct TaskItem: Identifiable {
-    let id = UUID()
+struct TaskItem: Identifiable, Codable, Equatable {
+    var id: UUID
     var name: String
     var description: String
     var priority: Priority
@@ -19,7 +19,30 @@ struct TaskItem: Identifiable {
     var labels: [String] = []
     var location: String?
     
-    enum Priority: String, CaseIterable {
+    // Add initializer with default UUID
+    init(
+        id: UUID = UUID(),
+        name: String,
+        description: String = "",
+        priority: Priority = .none,
+        isCompleted: Bool = false,
+        dueDate: Date? = nil,
+        reminder: Date? = nil,
+        labels: [String] = [],
+        location: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.priority = priority
+        self.isCompleted = isCompleted
+        self.dueDate = dueDate
+        self.reminder = reminder
+        self.labels = labels
+        self.location = location
+    }
+    
+    enum Priority: String, CaseIterable, Codable {
         case high = "High"
         case medium = "Medium"
         case low = "Low"
