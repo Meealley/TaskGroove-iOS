@@ -16,6 +16,8 @@ struct InboxView: View {
     @State private var undoMessage = ""
     @State private var lastRescheduledTask: (task: TaskItem, oldDate: Date?)?
     @State private var triggerDismiss = false
+    @State private var selectedTask: TaskItem? // Add this
+    @State private var taskToEdit: TaskItem? // Add this
     
     private var userName: String {
         if let displayName = authManager.user?.displayName, !displayName.isEmpty {
@@ -115,6 +117,41 @@ struct InboxView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
+            // Task Detail Sheet
+            .sheet(item: $selectedTask) { task in
+                TaskDetailSheet(
+                    task: task,
+                    onEdit: {
+                        selectedTask = nil
+                        // Small delay to allow first sheet to dismiss
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            taskToEdit = task
+                        }
+                    },
+                    onDelete: {
+                        viewModel.deleteTask(task)
+                    },
+                    onToggleComplete: {
+                        viewModel.toggleCompletion(for: task)
+                    },
+                    onReschedule: {
+                        selectedTask = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            taskToReschedule = task
+                        }
+                    }
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+            // Edit Task Sheet
+            .sheet(item: $taskToEdit) { task in
+                EditTaskSheet(task: task) { updatedTask in
+                    viewModel.updateTask(updatedTask)
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
         }
     }
     
@@ -151,7 +188,10 @@ struct InboxView: View {
                         onReschedule: {
                             taskToReschedule = task
                         },
-                        onDelete: { viewModel.deleteTask(task) }
+                        onDelete: { viewModel.deleteTask(task) },
+                        onTap: {
+                            selectedTask = task
+                        }
                     )
                     .padding(.vertical, 6)
                     
@@ -174,6 +214,9 @@ struct InboxView: View {
                     task: task,
                     onToggle: { viewModel.toggleCompletion(for: task) }
                 )
+                .onTapGesture {
+                    selectedTask = task
+                }
             }
         }
     }
@@ -186,6 +229,9 @@ struct InboxView: View {
                     task: task,
                     onToggle: { viewModel.toggleCompletion(for: task) }
                 )
+                .onTapGesture {
+                    selectedTask = task
+                }
             }
         }
     }

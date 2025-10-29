@@ -12,7 +12,8 @@ struct TaskListCard: View {
     let onToggle: () -> Void
     let onReschedule: () -> Void
     let onDelete: () -> Void
-    var isOverdue: Bool = false // Add overdue parameter
+    let onTap: () -> Void // Add tap handler
+    var isOverdue: Bool = false
     
     @State private var offset: CGFloat = 0
     @State private var isSwiping = false
@@ -43,6 +44,13 @@ struct TaskListCard: View {
             // Main Card Content
             cardContent
                 .offset(x: offset)
+                .contentShape(Rectangle()) // Make entire card tappable
+                .onTapGesture {
+                    // Only trigger tap if not swiped
+                    if offset == 0 {
+                        onTap()
+                    }
+                }
                 .gesture(
                     DragGesture(minimumDistance: 20)
                         .onChanged { gesture in
@@ -97,6 +105,7 @@ struct TaskListCard: View {
                     .font(.system(size: 24))
                     .foregroundColor(task.isCompleted ? .green : .gray)
             }
+            .buttonStyle(.plain) // Prevent button from consuming tap gesture
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(task.name)
@@ -309,6 +318,7 @@ struct TaskListCard: View {
             onToggle: {},
             onReschedule: {},
             onDelete: {},
+            onTap: {},
             isOverdue: true
         )
         
@@ -323,7 +333,8 @@ struct TaskListCard: View {
             ),
             onToggle: {},
             onReschedule: {},
-            onDelete: {}
+            onDelete: {},
+            onTap: {}
         )
         
         // Tomorrow
@@ -337,7 +348,8 @@ struct TaskListCard: View {
             ),
             onToggle: {},
             onReschedule: {},
-            onDelete: {}
+            onDelete: {},
+            onTap: {}
         )
         
         // Next Week
@@ -351,7 +363,8 @@ struct TaskListCard: View {
             ),
             onToggle: {},
             onReschedule: {},
-            onDelete: {}
+            onDelete: {},
+            onTap: {}
         )
         
         // Far Future
@@ -365,7 +378,8 @@ struct TaskListCard: View {
             ),
             onToggle: {},
             onReschedule: {},
-            onDelete: {}
+            onDelete: {},
+            onTap: {}
         )
     }
     .padding()

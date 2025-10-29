@@ -1,11 +1,3 @@
-
-//
-//  UpcomingView.swift
-//  TaskGroove
-//
-//  Created by Oyewale Favour on 24/10/2025.
-//
-
 //
 //  UpcomingView.swift
 //  TaskGroove
@@ -16,16 +8,19 @@
 import SwiftUI
 
 struct UpcomingView: View {
+    @ObservedObject var viewModel: InboxViewModel
     @State private var selectedDate = Date()
     @State private var currentMonth = Date()
     @State private var isCalendarExpanded = true
     @State private var scrollViewOffset: CGFloat = 0
     @State private var currentVisibleDate = Date()
-    @State private var tasks: [DayTask] = [
-        DayTask(date: Date(), title: "Get books", description: "", category: "Books", categoryColor: .blue, subtasks: 2, isCompleted: false),
-        DayTask(date: Date().addingTimeInterval(86400), title: "Team Meeting", description: "get status from SEG", category: "Work", categoryColor: .purple, subtasks: 0, isCompleted: false),
-        DayTask(date: Date().addingTimeInterval(86400 * 3), title: "Project Deadline", description: "You need to fit this in!", category: "Projects", categoryColor: .red, subtasks: 5, isCompleted: false)
-    ]
+    @State private var taskToReschedule: TaskItem?
+    @State private var showUndoToast = false
+    @State private var undoMessage = ""
+    @State private var lastRescheduledTask: (task: TaskItem, oldDate: Date?)?
+    @State private var triggerDismiss = false
+    @State private var selectedTask: TaskItem?
+    @State private var taskToEdit: TaskItem?
     
     // Dynamic: Generate dates for 20 months from today
     private var allDates: [Date] {
@@ -52,6 +47,16 @@ struct UpcomingView: View {
         }
         
         return dates
+    }
+    
+    // Get tasks for a specific date
+    private func tasksForDate(_ date: Date) -> [TaskItem] {
+        let calendar = Calendar.current
+        return viewModel.tasks.filter { task in
+            guard let dueDate = task.dueDate else { return false }
+            return calendar.isDate(dueDate, inSameDayAs: date)
+        }
+        .sorted { ($0.dueDate ?? Date()) < ($1.dueDate ?? Date()) }
     }
     
     var body: some View {
@@ -103,9 +108,21 @@ struct UpcomingView: View {
                         ScrollView {
                             LazyVStack(alignment: .leading, spacing: 0) {
                                 ForEach(allDates, id: \.self) { date in
-                                    DailySection(
+                                    DailyTaskSection(
                                         date: date,
-                                        tasks: tasks.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
+                                        tasks: tasksForDate(date),
+                                        onToggle: { task in
+                                            viewModel.toggleCompletion(for: task)
+                                        },
+                                        onReschedule: { task in
+                                            taskToReschedule = task
+                                        },
+                                        onDelete: { task in
+                                            viewModel.deleteTask(task)
+                                        },
+                                        onTap: { task in
+                                            selectedTask = task
+                                        }
                                     )
                                     .id(date)
                                     .padding(.horizontal)
@@ -141,8 +158,6 @@ struct UpcomingView: View {
                                 if !calendar.isDate(currentMonth, equalTo: topDate, toGranularity: .month) {
                                     currentMonth = topDate
                                 }
-                                
-                                // DON'T update selectedDate here - only update it when user taps calendar
                             }
                         }
                         .onChange(of: selectedDate) { _, newDate in
@@ -162,6 +177,24 @@ struct UpcomingView: View {
                     
                     Spacer()
                 }
+                
+                // Undo Toast
+                if showUndoToast {
+                    VStack {
+                        Spacer()
+                        UndoToastView(
+                            message: undoMessage,
+                            triggerDismiss: $triggerDismiss,
+                            onUndo: undoReschedule,
+                            onDismiss: {
+                                showUndoToast = false
+                                triggerDismiss = false
+                            }
+                        )
+                        .padding(.bottom, 100)
+                        .padding(.horizontal, 20)
+                    }
+                }
             }
             .navigationTitle("Upcoming")
             .navigationBarTitleDisplayMode(.inline)
@@ -178,7 +211,92 @@ struct UpcomingView: View {
                         .font(.title3)
                 }
             }
+            .sheet(item: $taskToReschedule) { task in
+                RescheduleDateSheet(
+                    task: task,
+                    onReschedule: { newDate in
+                        rescheduleTask(task, to: newDate)
+                    }
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+            .sheet(item: $selectedTask) { task in
+                TaskDetailSheet(
+                    task: task,
+                    onEdit: {
+                        selectedTask = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            taskToEdit = task
+                        }
+                    },
+                    onDelete: {
+                        viewModel.deleteTask(task)
+                    },
+                    onToggleComplete: {
+                        viewModel.toggleCompletion(for: task)
+                    },
+                    onReschedule: {
+                        selectedTask = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            taskToReschedule = task
+                        }
+                    }
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+            .sheet(item: $taskToEdit) { task in
+                EditTaskSheet(task: task) { updatedTask in
+                    viewModel.updateTask(updatedTask)
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
         }
+    }
+    
+    // MARK: - Reschedule Logic
+    private func rescheduleTask(_ task: TaskItem, to newDate: Date) {
+        let calendar = Calendar.current
+        let oldDate = task.dueDate ?? Date()
+        
+        let oldComponents = calendar.dateComponents([.year, .month, .day], from: oldDate)
+        let newComponents = calendar.dateComponents([.year, .month, .day], from: newDate)
+        
+        if oldComponents == newComponents {
+            return
+        }
+        
+        lastRescheduledTask = (task, task.dueDate)
+        viewModel.rescheduleTask(task, to: newDate)
+        
+        let dateFormatter = DateFormatter()
+        
+        if calendar.isDateInToday(newDate) {
+            undoMessage = "Scheduled for Today"
+        } else if calendar.isDateInTomorrow(newDate) {
+            undoMessage = "Scheduled for Tomorrow"
+        } else {
+            dateFormatter.dateFormat = "MMM d"
+            undoMessage = "Scheduled for \(dateFormatter.string(from: newDate))"
+        }
+        
+        showUndoToast = true
+        triggerDismiss = false
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            triggerDismiss = true
+        }
+    }
+    
+    private func undoReschedule() {
+        guard let (task, oldDate) = lastRescheduledTask else { return }
+        
+        viewModel.rescheduleTask(task, to: oldDate)
+        showUndoToast = false
+        triggerDismiss = false
+        lastRescheduledTask = nil
     }
 }
 
@@ -197,5 +315,5 @@ struct VisibleDatePreferenceKey: PreferenceKey {
 }
 
 #Preview {
-    UpcomingView()
+    UpcomingContainerView()
 }

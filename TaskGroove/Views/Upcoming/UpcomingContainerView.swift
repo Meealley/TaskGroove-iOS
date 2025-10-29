@@ -13,7 +13,9 @@ struct UpcomingContainerView: View {
     
     var body: some View {
         ZStack {
-            UpcomingView()
+            UpcomingView(
+                viewModel: viewModel
+            )
             
             // Floating Action Button
             VStack {

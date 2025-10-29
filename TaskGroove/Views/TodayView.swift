@@ -15,6 +15,8 @@ struct TodayView: View {
     @State private var lastRescheduledTask: (task: TaskItem, oldDate: Date?)?
     @State private var triggerDismiss = false
     @State private var showOverdueTasks = true
+    @State private var selectedTask: TaskItem? // For detail sheet
+    @State private var taskToEdit: TaskItem? // For edit sheet
     
     private var overdueTasks: [TaskItem] {
         let calendar = Calendar.current
@@ -142,6 +144,41 @@ struct TodayView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
+            // Task Detail Sheet
+            .sheet(item: $selectedTask) { task in
+                TaskDetailSheet(
+                    task: task,
+                    onEdit: {
+                        selectedTask = nil
+                        // Small delay to allow first sheet to dismiss
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            taskToEdit = task
+                        }
+                    },
+                    onDelete: {
+                        viewModel.deleteTask(task)
+                    },
+                    onToggleComplete: {
+                        viewModel.toggleCompletion(for: task)
+                    },
+                    onReschedule: {
+                        selectedTask = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            taskToReschedule = task
+                        }
+                    }
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+            // Edit Task Sheet
+            .sheet(item: $taskToEdit) { task in
+                EditTaskSheet(task: task) { updatedTask in
+                    viewModel.updateTask(updatedTask)
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
         }
     }
     
@@ -187,7 +224,7 @@ struct TodayView: View {
                 
                 // Reschedule All Button
                 Button {
-                    // Show reschedule sheet for all overdue tasks
+                    // Show reschedule sheet for first overdue task
                     if let firstOverdueTask = overdueTasks.first {
                         taskToReschedule = firstOverdueTask
                     }
@@ -224,6 +261,9 @@ struct TodayView: View {
                                 taskToReschedule = task
                             },
                             onDelete: { viewModel.deleteTask(task) },
+                            onTap: {
+                                selectedTask = task
+                            },
                             isOverdue: true
                         )
                         .padding(.vertical, 6)
@@ -263,7 +303,10 @@ struct TodayView: View {
                             onReschedule: {
                                 taskToReschedule = task
                             },
-                            onDelete: { viewModel.deleteTask(task) }
+                            onDelete: { viewModel.deleteTask(task) },
+                            onTap: {
+                                selectedTask = task
+                            }
                         )
                         .padding(.vertical, 6)
                         
