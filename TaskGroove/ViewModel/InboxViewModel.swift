@@ -15,11 +15,37 @@ final class InboxViewModel: ObservableObject {
     @Published var showViewSheet = false
     @Published var showTaskSheet = false
     @Published var isLoading = false
+    @Published var showCompletedTasks: Bool = false
+    @Published var completedTaskDisplayLimit: Int = 50
+    @Published var isLoadingMoreCompleted = false
     
     private let tasksKey = "SavedTasks"
     
     init() {
         loadTasks()
+    }
+    
+    
+    // MARK: - Computed Properties
+    var activeTasks: [ TaskItem] {
+        tasks.filter { !$0.isCompleted }
+    }
+    
+    var completedTasks: [TaskItem] {
+        tasks.filter { $0.isCompleted }
+            .sorted { ($0.dueDate ?? Date.distantPast) > ($1.dueDate ?? Date.distantPast)}
+    }
+    
+    var visibleCompletedTasks: [TaskItem] {
+        Array(completedTasks.prefix(completedTaskDisplayLimit))
+    }
+    
+    var hasMoreCompletedTasks: Bool {
+        completedTasks.count > completedTaskDisplayLimit
+    }
+    
+    var remainingCompletedTasksCount: Int {
+        max(0, completedTasks.count - completedTaskDisplayLimit)
     }
     
     // MARK: - Load Tasks
@@ -219,50 +245,103 @@ final class InboxViewModel: ObservableObject {
     }
     
     // MARK: - Computed Property for Filtered Tasks
+    // MARK: - Computed Property for Filtered Tasks
     var filteredTasks: [TaskItem] {
         let today = Date()
         let calendar = Calendar.current
         
+        // Get only active (non-completed) tasks
+        let activeTasksList = tasks.filter { !$0.isCompleted }
+        
+        var filtered: [TaskItem]
+        
         switch selectedFilter {
         case .all:
-            return tasks
+            filtered = activeTasksList
         case .today:
-            return tasks.filter {
+            filtered = activeTasksList.filter {
                 guard let dueDate = $0.dueDate else { return false }
                 return calendar.isDate(dueDate, inSameDayAs: today)
             }
         case .tomorrow:
-            return tasks.filter {
+            filtered = activeTasksList.filter {
                 guard let dueDate = $0.dueDate else { return false }
                 guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else { return false }
                 return calendar.isDate(dueDate, inSameDayAs: tomorrow)
             }
         case .thisWeek:
-            return tasks.filter {
+            filtered = activeTasksList.filter {
                 guard let dueDate = $0.dueDate else { return false }
                 return calendar.isDate(dueDate, equalTo: today, toGranularity: .weekOfYear)
             }
         case .nextWeek:
-            return tasks.filter {
+            filtered = activeTasksList.filter {
                 guard let dueDate = $0.dueDate else { return false }
                 guard let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: today) else { return false }
                 return calendar.isDate(dueDate, equalTo: nextWeek, toGranularity: .weekOfYear)
             }
         case .thisMonth:
-            return tasks.filter {
+            filtered = activeTasksList.filter {
                 guard let dueDate = $0.dueDate else { return false }
                 return calendar.isDate(dueDate, equalTo: today, toGranularity: .month)
             }
         case .nextMonth:
-            return tasks.filter {
+            filtered = activeTasksList.filter {
                 guard let dueDate = $0.dueDate else { return false }
                 guard let nextMonth = calendar.date(byAdding: .month, value: 1, to: today) else { return false }
                 return calendar.isDate(dueDate, equalTo: nextMonth, toGranularity: .month)
             }
         case .noDate:
-            return tasks.filter { $0.dueDate == nil }
+            filtered = activeTasksList.filter { $0.dueDate == nil }
         }
+        
+        return filtered
     }
+    
+//    var filteredTasks: [TaskItem] {
+//        let today = Date()
+//        let calendar = Calendar.current
+//        
+//        switch selectedFilter {
+//        case .all:
+//            return tasks
+//        case .today:
+//            return tasks.filter {
+//                guard let dueDate = $0.dueDate else { return false }
+//                return calendar.isDate(dueDate, inSameDayAs: today)
+//            }
+//        case .tomorrow:
+//            return tasks.filter {
+//                guard let dueDate = $0.dueDate else { return false }
+//                guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else { return false }
+//                return calendar.isDate(dueDate, inSameDayAs: tomorrow)
+//            }
+//        case .thisWeek:
+//            return tasks.filter {
+//                guard let dueDate = $0.dueDate else { return false }
+//                return calendar.isDate(dueDate, equalTo: today, toGranularity: .weekOfYear)
+//            }
+//        case .nextWeek:
+//            return tasks.filter {
+//                guard let dueDate = $0.dueDate else { return false }
+//                guard let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: today) else { return false }
+//                return calendar.isDate(dueDate, equalTo: nextWeek, toGranularity: .weekOfYear)
+//            }
+//        case .thisMonth:
+//            return tasks.filter {
+//                guard let dueDate = $0.dueDate else { return false }
+//                return calendar.isDate(dueDate, equalTo: today, toGranularity: .month)
+//            }
+//        case .nextMonth:
+//            return tasks.filter {
+//                guard let dueDate = $0.dueDate else { return false }
+//                guard let nextMonth = calendar.date(byAdding: .month, value: 1, to: today) else { return false }
+//                return calendar.isDate(dueDate, equalTo: nextMonth, toGranularity: .month)
+//            }
+//        case .noDate:
+//            return tasks.filter { $0.dueDate == nil }
+//        }
+//    }
     
     // MARK: - Task Operations
     func addTask(_ task: TaskItem) {
@@ -274,6 +353,17 @@ final class InboxViewModel: ObservableObject {
         if let index = tasks.firstIndex(where: { $0.id == task.id }) {
             tasks[index].isCompleted.toggle()
             saveTasks()
+            
+            // Play sound based on action
+                   if tasks[index].isCompleted {
+                       // Task was just completed - play completion sound
+                       SoundManager.shared.playCompletionSound()
+                   } else {
+                       // Task was uncompleted - play uncomplete sound
+                       SoundManager.shared.playUncompleteSound()
+                   }
+            
+            objectWillChange.send()
         }
     }
     
@@ -295,6 +385,17 @@ final class InboxViewModel: ObservableObject {
         if let index = tasks.firstIndex(where: { $0.id == task.id }) {
             tasks[index] = task
             saveTasks()
+        }
+    }
+    
+    // MARK: - Load more Completed Tasks
+    func loadMoreCompletedTasks()  {
+        isLoadingMoreCompleted = true
+        
+        // Simulate loading delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.completedTaskDisplayLimit += 50
+            self?.isLoadingMoreCompleted = false
         }
     }
     

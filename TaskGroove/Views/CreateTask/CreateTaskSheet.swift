@@ -17,13 +17,49 @@ struct CreateTaskSheet: View {
     @State private var showReminderPicker = false
     @State private var showProjectPicker = false
     
+    var defaultDate: Date? = nil
+    
+    // Computed properties for dueDateTitle
+    private var dueDateTitle: String {
+        guard let date = createViewModel.dueDate else {
+            return "Date"
+        }
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInTomorrow(date) {
+            return "Tomorrow"
+        } else {
+            let formatter  = DateFormatter()
+            formatter.dateFormat = "MMM d"
+            return formatter.string(from: date)
+        }
+    }
+    
+    // For dueDate color
+    private var dueDateColor: Color {
+        guard let date = createViewModel.dueDate else {
+            return .blue
+        }
+        
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return .green
+        } else if calendar.isDateInTomorrow(date) {
+            return .orange
+        } else {
+            return .blue
+        }
+    }
+    
+    
     var body: some View {
         NavigationStack {
             ZStack {
                 Color(.systemGroupedBackground)
                     .ignoresSafeArea()
                 
-                VStack(spacing: 0) {
+                VStack(spacing: 1) {
                     // Main Content
                     VStack(spacing: 16) {
                         // Task Input Card
@@ -48,8 +84,13 @@ struct CreateTaskSheet: View {
                         get: { createViewModel.dueDate ?? Date() },
                         set: { createViewModel.dueDate = $0 }
                     ),
-                    onDismiss: { showDatePicker = false }
-                )
+                    onDismiss: { showDatePicker = false },
+
+                    onClear : {
+                        createViewModel.dueDate = nil
+                        showDatePicker = false
+                    }
+                                    )
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
@@ -73,6 +114,9 @@ struct CreateTaskSheet: View {
                 .presentationDragIndicator(.visible)
             }
             .onAppear {
+                // Set default date if provided
+                createViewModel.setDefaultDate(defaultDate)
+                
                 // Delay slightly to ensure sheet is presented before focusing
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     isTaskNameFocused = true
@@ -127,7 +171,7 @@ struct CreateTaskSheet: View {
                 }
                 .padding(.horizontal, 20)
                 
-                // Date Label (if selected) - UPDATED
+                // Date Label (if selected)
                 if let dueDate = createViewModel.dueDate {
                     HStack {
                         Spacer()
@@ -151,11 +195,11 @@ struct CreateTaskSheet: View {
     
     // MARK: - Quick Action Pills
     private var quickActionPills: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 15) {
             ActionPill(
                 icon: "calendar",
-                title: "Date",
-                color: .blue,
+                title: dueDateTitle,
+                color: dueDateColor,
                 isActive: createViewModel.hasDateSet  // UPDATED
             ) {
                 showDatePicker = true
@@ -278,7 +322,7 @@ struct ActionPill: View {
                 RoundedRectangle(cornerRadius: 14)
                     .fill(isActive ? color : color.opacity(0.1))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 18)
+                        RoundedRectangle(cornerRadius: 22)
                             .stroke(color.opacity(0.2), lineWidth: 1)
                     )
             )
@@ -301,6 +345,18 @@ struct DateChip: View {
         }
     }
     
+    // Date Chip Color
+    private var chipColor: Color {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return .green
+        } else if calendar.isDateInTomorrow(date) {
+            return .orange
+        } else {
+            return .blue
+        }
+    }
+    
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: "calendar")
@@ -308,71 +364,22 @@ struct DateChip: View {
             Text(dateText)
                 .font(.dmsans(size: 12))
         }
-        .foregroundColor(.orange)
+        .foregroundColor(chipColor)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color.orange.opacity(0.1))
+//                .fill(Color.orange.opacity(0.1))
+                .fill(chipColor.opacity(0.1))
         )
     }
 }
 
-// MARK: - Date Suggestion Model
-//struct DateSuggestion: Identifiable {
-//    let id = UUID()
-//    let text: String
-//    let date: Date
-//}
-
-// MARK: - Quick Date Option
-//enum QuickDateOption: CaseIterable {
-//    case today, tomorrow, thisWeekend, nextWeek
-//    
-//    var title: String {
-//        switch self {
-//        case .today: return "Today"
-//        case .tomorrow: return "Tomorrow"
-//        case .thisWeekend: return "This Weekend"
-//        case .nextWeek: return "Next Week"
-//        }
-//    }
-//    
-//    var icon: String {
-//        switch self {
-//        case .today: return "calendar"
-//        case .tomorrow: return "sun.max"
-//        case .thisWeekend: return "sofa"
-//        case .nextWeek: return "calendar.badge.plus"
-//        }
-//    }
-//    
-//    var date: Date {
-//        let calendar = Calendar.current
-//        switch self {
-//        case .today:
-//            return Date()
-//        case .tomorrow:
-//            return calendar.date(byAdding: .day, value: 1, to: Date())!
-//        case .thisWeekend:
-//            let weekday = calendar.component(.weekday, from: Date())
-//            let daysUntilSaturday = (7 - weekday + 7) % 7
-//            return calendar.date(byAdding: .day, value: daysUntilSaturday == 0 ? 7 : daysUntilSaturday, to: Date())!
-//        case .nextWeek:
-//            return calendar.date(byAdding: .weekOfYear, value: 1, to: Date())!
-//        }
-//    }
-//    
-//    var dayText: String {
-//        let formatter = DateFormatter()
-//        formatter.dateFormat = "EEE"
-//        return formatter.string(from: date)
-//    }
-//}
 
 // MARK: - Enhanced Date Picker with functional search
 struct DatePickerSheet: View {
     @Binding var selectedDate: Date
+    let onClear: () -> Void
     let onDismiss: () -> Void
     
     @State private var tempDate: Date
@@ -383,9 +390,10 @@ struct DatePickerSheet: View {
     @State private var showTimePicker = false
     @State private var selectedTime: Date = Date()
     
-    init(selectedDate: Binding<Date>, onDismiss: @escaping () -> Void) {
+    init(selectedDate: Binding<Date>, onDismiss: @escaping () -> Void, onClear: @escaping () -> Void) {
         self._selectedDate = selectedDate
         self.onDismiss = onDismiss
+        self.onClear = onClear
         // Initialize tempDate with the current selected date
         _tempDate = State(initialValue: selectedDate.wrappedValue)
     }
@@ -480,12 +488,19 @@ struct DatePickerSheet: View {
             .navigationTitle("Date")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+//                ToolbarItem(placement: .navigationBarLeading) {
+//                    Button("Cancel") {
+//                        onDismiss()
+//                    }
+//                    .font(.dmsans())
+//                }
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        onDismiss()
-                    }
-                    .font(.dmsans())
-                }
+                                    Button("Clear") {
+                                        onClear()
+                                    }
+                                    .font(.dmsans())
+                                    .foregroundColor(.red)
+                                }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {

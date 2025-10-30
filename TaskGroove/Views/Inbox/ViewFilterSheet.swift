@@ -52,6 +52,39 @@ struct ViewFilterSheet: View {
                 Divider()
                     .padding(.horizontal, 20)
                 
+                // Show Completed Tasks Toggle
+                VStack(alignment: .leading, spacing: 15) {
+                    Toggle(isOn: $viewModel.showCompletedTasks) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                                .font(.system(size: 20))
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Show Completed")
+                                    .font(.dmsans(size: 16))
+                                    .foregroundStyle(.primary)
+                                
+                                Text("\(viewModel.completedTasks.count) completed tasks")
+                                    .font(.dmsans(size: 13))
+                                    .foregroundStyle(.secondary)
+                                
+                            }
+                        }
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: .green))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
+                    .padding(.horizontal, 20)
+                }
+                
+                
+                Divider()
+                    .padding(.horizontal, 20)
+                
+                
                 // Filter Group
                 VStack(alignment: .leading, spacing: 15) {
                     Text("Filter")

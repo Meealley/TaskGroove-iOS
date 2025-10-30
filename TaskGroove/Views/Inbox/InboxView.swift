@@ -101,7 +101,7 @@ struct InboxView: View {
                     .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $viewModel.showTaskSheet) {
-                CreateTaskSheet(viewModel: viewModel)
+                CreateTaskSheet(viewModel: viewModel, defaultDate: nil) // No default date
                     .presentationDetents([.height(UIScreen.main.bounds.height * 0.3)])
                     .presentationDragIndicator(.visible)
                     .presentationBackgroundInteraction(.disabled)
@@ -177,10 +177,11 @@ struct InboxView: View {
     // MARK: - List View
     private var listView: some View {
         VStack(spacing: 0) {
-            if viewModel.filteredTasks.isEmpty {
+            if viewModel.filteredTasks.isEmpty && !viewModel.showCompletedTasks {
                 emptyStateView
                     .padding(.top, 60)
             } else {
+                // ActiveTasks
                 ForEach(viewModel.filteredTasks) { task in
                     TaskListCard(
                         task: task,
@@ -197,6 +198,78 @@ struct InboxView: View {
                     
                     if task.id != viewModel.filteredTasks.last?.id {
                         MenuDivider()
+                    }
+                }
+                
+                // Completed Tasks Section
+                if viewModel.showCompletedTasks && !viewModel.completedTasks.isEmpty {
+                    // Divider before completed section
+                    if !viewModel.filteredTasks.isEmpty {
+                        Divider()
+                            .padding(.vertical, 20)
+                    }
+                    
+                    // Completed Header
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("Completed")
+                            .font(.dmsansBold(size: 16))
+                            .foregroundStyle(.secondary)
+                        
+                        Spacer()
+                        
+                        Text("\(viewModel.completedTasks.count)")
+                            .font(.dmsans(size: 14))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                    
+                    MenuDivider()
+                    
+                    // Visible completed tasks
+                    ForEach(viewModel.visibleCompletedTasks) { task in
+                        TaskListCard(task: task, onToggle: { viewModel.toggleCompletion(for: task)}, onReschedule: {
+                            taskToReschedule = task
+                        }, onDelete: {
+                            viewModel.deleteTask(task)
+                        }, onTap:  {
+                            selectedTask = task
+                        } )
+                        .padding(.vertical, 6)
+                        .opacity(0.6)
+                        
+                        
+                        if (task.id != viewModel.visibleCompletedTasks.last?.id) {
+                            MenuDivider()
+                        }
+                    }
+                    
+                    // Load for more button
+                    
+                    if viewModel.hasMoreCompletedTasks {
+                        Button(action: {
+                            viewModel.loadMoreCompletedTasks()
+                        }) {
+                            HStack(spacing: 10) {
+                                if viewModel.isLoadingMoreCompleted{
+                                    ProgressView().scaleEffect(0.8)
+                                    
+                                } else {
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 16))
+                                }
+                                Text("\(viewModel.remainingCompletedTasksCount) completed Task")
+                                    .font(.dmsans(size: 15))
+                            }
+                            .foregroundColor(.blue)
+                                                    .frame(maxWidth: .infinity)
+                                                    .padding(.vertical, 16)
+                                                    .background(Color(.systemBackground))
+                                                    .cornerRadius(12)
+                        }
+                        .disabled(viewModel.isLoadingMoreCompleted)
+                                           .padding(.top, 12)
                     }
                 }
             }

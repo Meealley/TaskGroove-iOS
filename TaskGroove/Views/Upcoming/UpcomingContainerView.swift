@@ -45,7 +45,7 @@ struct UpcomingContainerView: View {
             }
         }
         .sheet(isPresented: $showCreateTask) {
-            CreateTaskSheet(viewModel: viewModel)
+            CreateTaskSheet(viewModel: viewModel, defaultDate: nil) // No default date
                 .presentationDetents([.height(UIScreen.main.bounds.height * 0.3)])
                 .presentationDragIndicator(.visible)
                 .presentationBackgroundInteraction(.disabled)

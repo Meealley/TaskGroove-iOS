@@ -20,6 +20,7 @@ final class CreateTaskViewModel: ObservableObject {
     @Published var selectedLabels: Set<String> = []
     @Published var deadline = Date()
     @Published var location = ""
+    @Published var defaultDate: Date? = nil
     
     let availableLabels = ["Work", "Personal", "Urgent", "Follow-up", "Ideas"]
     
@@ -30,6 +31,12 @@ final class CreateTaskViewModel: ObservableObject {
     // Check if date was actually set
     var hasDateSet: Bool {
         dueDate != nil
+    }
+    
+    // Set default date
+    func setDefaultDate(_ date: Date?) {
+        self.defaultDate = date
+        self.dueDate = date
     }
     
     func createTask() -> TaskItem {
@@ -49,7 +56,7 @@ final class CreateTaskViewModel: ObservableObject {
         taskName = ""
         taskDescription = ""
         selectedPriority = .none
-        dueDate = nil
+        dueDate = defaultDate // Had to reset to default date instead of nil
         showDatePicker = false
         reminder = nil
         showReminderPicker = false

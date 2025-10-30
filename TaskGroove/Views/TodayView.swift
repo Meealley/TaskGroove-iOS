@@ -128,7 +128,7 @@ struct TodayView: View {
                 await refreshTasks()
             }
             .sheet(isPresented: $viewModel.showTaskSheet) {
-                CreateTaskSheet(viewModel: viewModel)
+                CreateTaskSheet(viewModel: viewModel, defaultDate: Date()) // Today's Date
                     .presentationDetents([.height(UIScreen.main.bounds.height * 0.3)])
                     .presentationDragIndicator(.visible)
                     .presentationBackgroundInteraction(.disabled)
