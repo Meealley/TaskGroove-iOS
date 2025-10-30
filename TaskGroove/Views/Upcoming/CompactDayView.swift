@@ -11,6 +11,7 @@ struct CompactDayView: View {
     let date: Date
     let isSelected: Bool
     let isToday: Bool
+    let hasTasks: Bool
     let action: () -> Void
     
     private var dateFormatter: DateFormatter {
@@ -59,6 +60,13 @@ struct CompactDayView: View {
                    .frame(width: 32, height: 32)
                    .background(backgroundColor)
                    .clipShape(Circle())
+               
+               if hasTasks {
+                   Circle()
+                       .fill(isSelected ? .white : .blue)
+                       .frame(width: 4, height: 4)
+                       .offset(y: 14)
+               }
            }
            .frame(width: 44)
         }
@@ -69,35 +77,48 @@ struct CompactDayView: View {
 
 #Preview {
     HStack(spacing: 12) {
-        // Today and selected
+        // Today and selected with tasks
         CompactDayView(
             date: Date(),
             isSelected: true,
             isToday: true,
+            hasTasks: true,
             action: {}
         )
         
-        // Today but not selected
+        // Today but not selected with tasks
         CompactDayView(
             date: Date(),
             isSelected: false,
             isToday: true,
+            hasTasks: true,
             action: {}
         )
         
-        // Selected but not today
+        // Selected but not today with tasks
         CompactDayView(
             date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
             isSelected: true,
             isToday: false,
+            hasTasks: true,
             action: {}
         )
         
-        // Normal day
+        // Normal day with tasks
         CompactDayView(
             date: Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
             isSelected: false,
             isToday: false,
+            hasTasks: true,
+            action: {}
+        )
+        
+        // Normal day without tasks
+        CompactDayView(
+            date: Calendar.current.date(byAdding: .day, value: -3, to: Date())!,
+            isSelected: false,
+            isToday: false,
+            hasTasks: false,
             action: {}
         )
     }

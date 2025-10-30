@@ -12,6 +12,7 @@ struct CalendarGridView: View {
     @Binding var currentMonth: Date
     @Binding var selectedDate: Date
     @Binding var currentVisibleDate: Date
+    @ObservedObject var viewModel: InboxViewModel
     
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
     // Use full names to ensure unique IDs
@@ -41,6 +42,9 @@ struct CalendarGridView: View {
     
     private func monthDates(for month: Date) -> [CalendarDate] {
         generateMonthDates(for: month)
+    }
+    private func  hasTaskOn(_ date: Date) -> Bool {
+        viewModel.hasTasksOn(date: date)
     }
     
     var body: some View {
@@ -73,7 +77,8 @@ struct CalendarGridView: View {
                                         CalendarDayView(
                                             calendarDate: calendarDate,
                                             isSelected: isSameDay(calendarDate.date, selectedDate),
-                                            isToday: isToday(calendarDate.date)
+                                            isToday: isToday(calendarDate.date),
+                                            hasTasks: hasTaskOn(calendarDate.date)
                                         ) {
                                             withAnimation(.easeInOut(duration: 0.2)) {
                                                 selectedDate = calendarDate.date
@@ -191,7 +196,8 @@ struct CalendarGridView: View {
     CalendarGridView(
         currentMonth: .constant(Date()),
         selectedDate: .constant(Date()),
-        currentVisibleDate: .constant(Date())
+        currentVisibleDate: .constant(Date()),
+        viewModel: InboxViewModel()
     )
     .padding()
     .previewLayout(.sizeThatFits)

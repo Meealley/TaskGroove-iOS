@@ -80,7 +80,8 @@ struct UpcomingView: View {
                             CalendarGridView(
                                 currentMonth: $currentMonth,
                                 selectedDate: $selectedDate,
-                                currentVisibleDate: $currentVisibleDate
+                                currentVisibleDate: $currentVisibleDate,
+                                viewModel: viewModel
                             )
                             .padding(.horizontal)
                             .padding(.vertical, 20)
@@ -88,7 +89,8 @@ struct UpcomingView: View {
                             CompactCalendarView(
                                 currentMonth: $currentMonth,
                                 selectedDate: $selectedDate,
-                                currentVisibleDate: $currentVisibleDate
+                                currentVisibleDate: $currentVisibleDate,
+                                viewModel: viewModel
                             )
                             .padding(.horizontal)
                             .padding(.vertical, 15)

@@ -298,51 +298,7 @@ final class InboxViewModel: ObservableObject {
         return filtered
     }
     
-//    var filteredTasks: [TaskItem] {
-//        let today = Date()
-//        let calendar = Calendar.current
-//        
-//        switch selectedFilter {
-//        case .all:
-//            return tasks
-//        case .today:
-//            return tasks.filter {
-//                guard let dueDate = $0.dueDate else { return false }
-//                return calendar.isDate(dueDate, inSameDayAs: today)
-//            }
-//        case .tomorrow:
-//            return tasks.filter {
-//                guard let dueDate = $0.dueDate else { return false }
-//                guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else { return false }
-//                return calendar.isDate(dueDate, inSameDayAs: tomorrow)
-//            }
-//        case .thisWeek:
-//            return tasks.filter {
-//                guard let dueDate = $0.dueDate else { return false }
-//                return calendar.isDate(dueDate, equalTo: today, toGranularity: .weekOfYear)
-//            }
-//        case .nextWeek:
-//            return tasks.filter {
-//                guard let dueDate = $0.dueDate else { return false }
-//                guard let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: today) else { return false }
-//                return calendar.isDate(dueDate, equalTo: nextWeek, toGranularity: .weekOfYear)
-//            }
-//        case .thisMonth:
-//            return tasks.filter {
-//                guard let dueDate = $0.dueDate else { return false }
-//                return calendar.isDate(dueDate, equalTo: today, toGranularity: .month)
-//            }
-//        case .nextMonth:
-//            return tasks.filter {
-//                guard let dueDate = $0.dueDate else { return false }
-//                guard let nextMonth = calendar.date(byAdding: .month, value: 1, to: today) else { return false }
-//                return calendar.isDate(dueDate, equalTo: nextMonth, toGranularity: .month)
-//            }
-//        case .noDate:
-//            return tasks.filter { $0.dueDate == nil }
-//        }
-//    }
-    
+
     // MARK: - Task Operations
     func addTask(_ task: TaskItem) {
         tasks.insert(task, at: 0)
@@ -388,6 +344,8 @@ final class InboxViewModel: ObservableObject {
         }
     }
     
+    
+    
     // MARK: - Load more Completed Tasks
     func loadMoreCompletedTasks()  {
         isLoadingMoreCompleted = true
@@ -411,5 +369,15 @@ final class InboxViewModel: ObservableObject {
         tasks = loadTasksFromStorage() ?? []
         
         isLoading = false
+    }
+    
+    // MARK: - Helper to Check if a date has tasks
+    func hasTasksOn(date: Date) -> Bool {
+        let calendar = Calendar.current
+        return tasks.contains {
+            task in
+            guard let dueDate = task.dueDate else { return false }
+            return calendar.isDate(dueDate, inSameDayAs: date)
+        }
     }
 }

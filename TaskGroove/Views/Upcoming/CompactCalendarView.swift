@@ -14,6 +14,7 @@ struct CompactCalendarView: View {
     @Binding var selectedDate: Date
     @Binding var currentVisibleDate: Date
     @State private var scrollOffset: CGFloat = 0
+    @ObservedObject var viewModel: InboxViewModel
     
     // Dynamic: Generate dates for 20 months from today
     private var allDates: [Date] {
@@ -42,6 +43,10 @@ struct CompactCalendarView: View {
         return dates
     }
     
+    private func  hasTaskOn(_ date: Date) -> Bool {
+        viewModel.hasTasksOn(date: date)
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             ScrollViewReader { proxy in
@@ -51,7 +56,8 @@ struct CompactCalendarView: View {
                             CompactDayView(
                                 date: date,
                                 isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate),
-                                isToday: Calendar.current.isDateInToday(date)
+                                isToday: Calendar.current.isDateInToday(date),
+                                hasTasks: hasTaskOn(date)
                             ) {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     selectedDate = date
@@ -133,7 +139,9 @@ struct CompactVisibleDatePreferenceKey: PreferenceKey {
     return CompactCalendarView(
         currentMonth: $currentMonth,
         selectedDate: $selectedDate,
-        currentVisibleDate: $currentVisibleDate
+        currentVisibleDate: $currentVisibleDate,
+        viewModel: InboxViewModel()
     )
+    
     .frame(height: 100)
 }
